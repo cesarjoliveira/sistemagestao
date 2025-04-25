@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Clientes from "./pages/Clientes";
 import Pedidos from "./pages/Pedidos";
 import Entregas from "./pages/Entregas";
@@ -11,19 +11,11 @@ function App() {
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-  
-    if (token && role) {
+    if (role) {
       setUsuario({ role });
     }
   }, []);
-
-  const logout = () => {
-    localStorage.removeItem("usuario");
-    setUsuario(null);
-    window.location.href = "/login"; // força redirect
-  };
 
   return (
     <BrowserRouter>
@@ -34,7 +26,12 @@ function App() {
             {["vendedor", "admin"].includes(usuario.role) && <Link to="/">Clientes</Link>}
             {["vendedor", "emissor", "admin"].includes(usuario.role) && <Link to="/pedidos">Pedidos</Link>}
             {["logistica", "admin"].includes(usuario.role) && <Link to="/entregas">Entregas</Link>}
-            <button onClick={logout}>Logout</button>
+            <button onClick={() => {
+              localStorage.removeItem("token");
+              localStorage.removeItem("role");
+              setUsuario(null);
+              window.location.href = "/login";
+            }}>Logout</button>
           </>
         )}
       </nav>
@@ -42,17 +39,17 @@ function App() {
         <Route path="/login" element={<Login setUsuario={setUsuario} />} />
         <Route path="/negado" element={<Negado />} />
         <Route path="/" element={
-          <PrivateRoute roles={["vendedor", "admin"]}>
+          <PrivateRoute usuario={usuario} roles={["vendedor", "admin"]}>
             <Clientes />
           </PrivateRoute>
         } />
         <Route path="/pedidos" element={
-          <PrivateRoute roles={["vendedor", "emissor", "admin"]}>
+          <PrivateRoute usuario={usuario} roles={["vendedor", "emissor", "admin"]}>
             <Pedidos />
           </PrivateRoute>
         } />
         <Route path="/entregas" element={
-          <PrivateRoute roles={["logistica", "admin"]}>
+          <PrivateRoute usuario={usuario} roles={["logistica", "admin"]}>
             <Entregas />
           </PrivateRoute>
         } />

@@ -1,8 +1,6 @@
 import { Navigate } from "react-router-dom";
 
-export function PrivateRoute({ children, roles }) {
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
-
+export function PrivateRoute({ children, roles, usuario }) {
   if (!usuario) {
     return <Navigate to="/login" />;
   }

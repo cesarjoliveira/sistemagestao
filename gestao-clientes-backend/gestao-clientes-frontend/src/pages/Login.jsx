@@ -26,6 +26,8 @@ function Login({ setUsuario }) {
       // 🔥 Aguarda um pequeno tempo para garantir que o usuário foi salvo
       setTimeout(() => {
         navigate("/");
+        setUsuario({ role: res.data.role });
+
       }, 100); // Pequeno delay para dar tempo do React atualizar o estado
     } catch (err) {
       console.error("🔴 Erro ao fazer login:", err.response ? err.response.data : err.message);

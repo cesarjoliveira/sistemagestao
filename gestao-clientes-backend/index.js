@@ -290,6 +290,26 @@ app.put('/usuarios/:id/desativar', autenticarToken, async (req, res) => {
   res.json({ message: 'Usuário desativado com sucesso', usuario: data });
 });
 
+// Rota para buscar produtos (por nome ou código)
+app.get('/produtos', autenticarToken, async (req, res) => {
+  const { busca } = req.query; // ?busca=camisa ou ?busca=12345
+
+  let query = supabase.from('produtos').select('*');
+
+  if (busca) {
+    query = query.or(`nome.ilike.%${busca}%,codigo.ilike.%${busca}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return res.status(500).json({ error });
+  }
+
+  res.json(data);
+});
+
+
 // -------------------- Subir Servidor --------------------
 const PORT = process.env.PORT || 3000;
 console.log("⏳ Tentando iniciar servidor na porta", PORT);

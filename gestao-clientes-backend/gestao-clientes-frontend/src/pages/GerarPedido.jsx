@@ -6,9 +6,10 @@ function GerarPedido() {
   const API = "https://sistemagestao-production-b109.up.railway.app";
   const token = localStorage.getItem("token");
 
+  const [documentoBusca, setDocumentoBusca] = useState("");
+  const [nomeBusca, setNomeBusca] = useState("");
   const [clientes, setClientes] = useState([]);
   const [clienteSelecionado, setClienteSelecionado] = useState(null);
-  const [buscaCliente, setBuscaCliente] = useState("");
   const [loadingClientes, setLoadingClientes] = useState(false);
 
   const [produtos, setProdutos] = useState([]);
@@ -16,12 +17,16 @@ function GerarPedido() {
   const [loadingProdutos, setLoadingProdutos] = useState(false);
 
   const [pedido, setPedido] = useState([]);
-
   const [quantidadeModal, setQuantidadeModal] = useState("");
   const [produtoSelecionado, setProdutoSelecionado] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const buscarClientes = async (texto) => {
+  const buscarClientes = async () => {
+    if (!documentoBusca && !nomeBusca) {
+      toast.error("Preencha Documento ou Nome para buscar!");
+      return;
+    }
+
     try {
       setLoadingClientes(true);
       const res = await axios.get(`${API}/clientes`, {
@@ -30,15 +35,23 @@ function GerarPedido() {
       const todosClientes = res.data;
 
       const filtrados = todosClientes.filter(c =>
-        c.nome.toLowerCase().includes(texto.toLowerCase()) ||
-        (c.documento && c.documento.includes(texto))
+        (documentoBusca && c.documento.includes(documentoBusca)) ||
+        (nomeBusca && c.nome.toLowerCase().includes(nomeBusca.toLowerCase()))
       );
+
       setClientes(filtrados);
     } catch (error) {
       console.error("Erro ao buscar clientes:", error);
     } finally {
       setLoadingClientes(false);
     }
+  };
+
+  const selecionarCliente = (cliente) => {
+    setClienteSelecionado(cliente);
+    setClientes([]);
+    setDocumentoBusca(cliente.documento);
+    setNomeBusca(cliente.nome);
   };
 
   const buscarProdutos = async (texto) => {
@@ -53,12 +66,6 @@ function GerarPedido() {
     } finally {
       setLoadingProdutos(false);
     }
-  };
-
-  const selecionarCliente = (cliente) => {
-    setClienteSelecionado(cliente);
-    setClientes([]);
-    setBuscaCliente(cliente.nome);
   };
 
   const abrirModalQuantidade = (produto) => {
@@ -135,7 +142,8 @@ function GerarPedido() {
 
   const resetarTela = () => {
     setClienteSelecionado(null);
-    setBuscaCliente("");
+    setDocumentoBusca("");
+    setNomeBusca("");
     setProdutos([]);
     setBuscaProduto("");
     setPedido([]);
@@ -149,31 +157,36 @@ function GerarPedido() {
       <div style={cardStyle}>
         <h1 style={{ textAlign: "center", marginBottom: "20px" }}>Gerar Novo Pedido</h1>
 
-        {/* Buscar Cliente */}
-        <div style={{ marginBottom: "30px" }}>
-          <label><strong>Buscar Cliente (Nome ou Documento):</strong></label>
-          <input
-            type="text"
-            value={buscaCliente}
-            onChange={(e) => {
-              setBuscaCliente(e.target.value);
-              buscarClientes(e.target.value);
-            }}
-            placeholder="Digite o nome ou documento"
-            style={inputStyle}
-          />
+        {/* Campos de Documento e Nome */}
+        <div style={{ marginBottom: "20px" }}>
+          <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+            <input
+              type="text"
+              placeholder="Documento"
+              value={documentoBusca}
+              onChange={(e) => setDocumentoBusca(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              placeholder="Nome do Cliente"
+              value={nomeBusca}
+              onChange={(e) => setNomeBusca(e.target.value)}
+              style={inputStyle}
+            />
+            <button style={buttonPrimary} onClick={buscarClientes}>Buscar Cliente</button>
+          </div>
 
+          {/* Resultados da busca */}
           {loadingClientes && <p>🔄 Carregando clientes...</p>}
-
-          {!loadingClientes && clientes.length === 0 && buscaCliente.length > 2 && (
+          {!loadingClientes && clientes.length === 0 && (documentoBusca || nomeBusca) && (
             <p>Nenhum cliente encontrado.</p>
           )}
-
           {clientes.length > 0 && (
             <ul style={listaStyle}>
               {clientes.map((c) => (
                 <li key={c.id} style={itemListaStyle} onClick={() => selecionarCliente(c)}>
-                  {c.nome} - {c.documento}
+                  {c.nome} ({c.documento})
                 </li>
               ))}
             </ul>
@@ -190,7 +203,7 @@ function GerarPedido() {
           </div>
         )}
 
-        {/* Buscar Produto */}
+        {/* Busca de Produto */}
         <div style={{ marginBottom: "30px" }}>
           <label><strong>Buscar Produto (Nome ou Código):</strong></label>
           <input
@@ -205,7 +218,6 @@ function GerarPedido() {
           />
 
           {loadingProdutos && <p>🔄 Carregando produtos...</p>}
-
           {!loadingProdutos && produtos.length === 0 && buscaProduto.length > 2 && (
             <p>Nenhum produto encontrado.</p>
           )}
@@ -247,9 +259,9 @@ function GerarPedido() {
               <thead>
                 <tr>
                   <th>Produto</th>
-                  <th>Preço (R$)</th>
+                  <th>Preço</th>
                   <th>Qtd</th>
-                  <th>Total (R$)</th>
+                  <th>Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -275,43 +287,31 @@ function GerarPedido() {
             </div>
           </>
         )}
-      </div>
 
-      {/* Modal de Quantidade */}
-      {showModal && (
-        <div style={modalOverlay}>
-          <div style={modalContent}>
-            <h2>Quantidade de {produtoSelecionado?.nome}</h2>
-            <input
-              type="number"
-              value={quantidadeModal}
-              onChange={(e) => setQuantidadeModal(e.target.value)}
-              placeholder="Digite a quantidade"
-              style={inputStyle}
-            />
-            <div style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center" }}>
-              <button style={buttonPrimary} onClick={confirmarQuantidade}>Confirmar</button>
-              <button style={buttonCancel} onClick={() => setShowModal(false)}>Cancelar</button>
+        {/* Modal de Quantidade */}
+        {showModal && (
+          <div style={modalOverlay}>
+            <div style={modalContent}>
+              <h2>Quantidade de {produtoSelecionado?.nome}</h2>
+              <input
+                type="number"
+                value={quantidadeModal}
+                onChange={(e) => setQuantidadeModal(e.target.value)}
+                placeholder="Digite a quantidade"
+                style={inputStyle}
+              />
+              <div style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center" }}>
+                <button style={buttonPrimary} onClick={confirmarQuantidade}>Confirmar</button>
+                <button style={buttonCancel} onClick={() => setShowModal(false)}>Cancelar</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-// Estilos — mesmos anteriores
-const backgroundStyle = { /* ... */ };
-const cardStyle = { /* ... */ };
-const inputStyle = { /* ... */ };
-const listaStyle = { /* ... */ };
-const itemListaStyle = { /* ... */ };
-const tableStyle = { /* ... */ };
-const buttonPrimary = { /* ... */ };
-const buttonSuccess = { /* ... */ };
-const buttonCancel = { /* ... */ };
-const dadosClienteStyle = { /* ... */ };
-const modalOverlay = { /* ... */ };
-const modalContent = { /* ... */ };
+// (Estilos continuam iguais ao anterior — se quiser mando eles aqui também rapidinho!)
 
 export default GerarPedido;

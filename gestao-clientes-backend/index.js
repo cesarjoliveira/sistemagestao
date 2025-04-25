@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const supabase = require('./supabaseClient');
+const jwt = require('jsonwebtoken');
 
 console.log("▶️  Cheguei no topo do index.js");
 

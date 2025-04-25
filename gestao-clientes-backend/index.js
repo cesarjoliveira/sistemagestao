@@ -54,25 +54,6 @@ app.post('/clientes', async (req, res) => {
   }
 });
 
-// Rota para listar clientes
-app.get('/clientes', async (req, res) => {
-  console.log("🔔 Rota GET /clientes acionada");
-  try {
-    const { data, error } = await supabase
-      .from('clientes')
-      .select('*');
-
-    if (error) {
-      console.log("❌ Erro ao listar clientes:", error);
-      return res.status(500).json({ error });
-    }
-    console.log("✅ Clientes listados:", data.length);
-    res.json(data);
-  } catch (err) {
-    console.log("❌ Exceção ao processar GET /clientes:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // Rota para criar pedido
 app.post('/pedidos', async (req, res) => {

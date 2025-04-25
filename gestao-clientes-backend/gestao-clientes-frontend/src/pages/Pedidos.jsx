@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import API from "../api";
 import axios from "axios";
 
 function Pedidos() {
@@ -11,7 +12,7 @@ function Pedidos() {
     data_entrega: ""
   });
 
-  const API = "http://localhost:3000";
+  const API = "http://sistemagestao.railway.internal";
 
   useEffect(() => {
     listarClientes();

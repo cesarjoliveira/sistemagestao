@@ -286,6 +286,71 @@ app.put('/pedidos/:id/status', async (req, res) => {
 });
 
 
+// Novo login conectado ao Supabase
+// Login usando JWT
+app.post('/login', async (req, res) => {
+  console.log("📩 entrou na rota login:");
+  const { email, senha } = req.body;
+
+  console.log("📩 Login recebido:", { email, senha });
+
+  const { data: usuario, error } = await supabase
+    .from('usuarios')
+    .select('*') // Seleciona tudo pra evitar campo faltando
+    .eq('email', email)
+    .single();
+
+  console.log("📦 Resultado do Supabase:", usuario);
+  if (error) {
+    console.log("❌ Erro do Supabase:", error);
+  }
+
+  if (!usuario) {
+    return res.status(401).json({ error: 'Email ou senha inválidos (usuário não encontrado)' });
+  }
+
+  console.log("🔐 Comparando senhas...");
+  console.log("→ Digitada:", senha);
+  console.log("→ No banco:", usuario.senha);
+
+  if (usuario.senha !== senha) {
+    console.log("❌ Senhas não batem!");
+    return res.status(401).json({ error: 'Email ou senha inválidos (senha incorreta)' });
+  }
+
+  const jwt = require('jsonwebtoken');
+  const token = jwt.sign(
+    { email: usuario.email, role: usuario.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '8h' }
+  );
+
+  console.log("✅ Login bem-sucedido!");
+  res.json({ token, role: usuario.role });
+});
+
+// Middleware para verificar JWT
+function autenticarToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Espera "Bearer TOKEN"
+
+  if (!token) {
+    return res.sendStatus(401); // Unauthorized
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, usuario) => {
+    if (err) return res.sendStatus(403); // Token inválido
+    req.usuario = usuario;
+    next();
+  });
+}
+
+app.get('/clientes', autenticarToken, async (req, res) => {
+  const { data, error } = await supabase.from('clientes').select('*');
+  if (error) return res.status(500).json({ error });
+  res.json(data);
+});
+
 const PORT = process.env.PORT || 3000;
 console.log("⏳ Tentando iniciar servidor na porta", PORT);
 app.listen(PORT, () => {

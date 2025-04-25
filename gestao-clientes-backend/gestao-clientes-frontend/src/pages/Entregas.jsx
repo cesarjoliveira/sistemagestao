@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../api";
 
 function Entregas() {
   const [entregas, setEntregas] = useState({});
-  const API = "http://localhost:3000"; // seu backend local
+  const API = "http://sistemagestao.railway.internal"; // seu backend local
 
   useEffect(() => {
     listarEntregas();

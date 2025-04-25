@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../api";
 
 function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [form, setForm] = useState({ nome: "", documento: "", email: "" });
 
-  const API_BASE = "http://localhost:3000"; // Aqui é seu backend local!
+  const API_BASE = "http://sistemagestao.railway.internal"; // Aqui é seu backend local!
 
   useEffect(() => {
     listarClientes();
@@ -23,7 +23,7 @@ function Clientes() {
   const cadastrarCliente = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE}/clientes`, form);
+      await API.post(`${API_BASE}/clientes`, form);
       setForm({ nome: "", documento: "", email: "" });
       listarClientes();
     } catch (error) {

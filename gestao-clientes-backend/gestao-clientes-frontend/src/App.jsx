@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Clientes from "./pages/Clientes";
 import Pedidos from "./pages/Pedidos";
@@ -10,7 +10,6 @@ import { PrivateRoute } from "./components/PrivateRoute";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
-  const navigate = useNavigate(); // adicionado para logout sem reload
 
   useEffect(() => {
     const role = localStorage.getItem("role");
@@ -23,36 +22,21 @@ function App() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     setUsuario(null);
-    navigate("/login");
+    window.location.href = "/login"; // Redireciona para login
   };
 
   return (
-    <div>
-      <nav style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: usuario ? "space-between" : "center",
-        padding: "15px 30px",
-        background: "linear-gradient(135deg, #000080 0%, #1a1a99 50%, #3333cc 100%)",
-        color: "#fff",
-        boxShadow: "0 4px 6px rgba(0,0,0,0.2)"
-      }}>
-        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-          {!usuario && <Link to="/login" style={linkStyle}>Login</Link>}
-          {usuario && (
-            <>
-              {["vendedor", "admin"].includes(usuario.role) && <Link to="/" style={linkStyle}>Clientes</Link>}
-              {["vendedor", "emissor", "admin"].includes(usuario.role) && <Link to="/pedidos" style={linkStyle}>Pedidos</Link>}
-              {["logistica", "admin"].includes(usuario.role) && <Link to="/entregas" style={linkStyle}>Entregas</Link>}
-              {usuario.role === "admin" && <Link to="/usuarios" style={linkStyle}>Usuários</Link>}
-            </>
-          )}
-        </div>
-
+    <BrowserRouter>
+      <nav style={{ display: "flex", gap: 10, padding: 20 }}>
+        {!usuario && <Link to="/login">Login</Link>}
         {usuario && (
-          <button onClick={fazerLogout} style={logoutButton}>
-            Logout
-          </button>
+          <>
+            {["vendedor", "admin"].includes(usuario.role) && <Link to="/">Clientes</Link>}
+            {["vendedor", "emissor", "admin"].includes(usuario.role) && <Link to="/pedidos">Pedidos</Link>}
+            {["logistica", "admin"].includes(usuario.role) && <Link to="/entregas">Entregas</Link>}
+            {usuario.role === "admin" && <Link to="/usuarios">Usuários</Link>}
+            <button onClick={fazerLogout}>Logout</button>
+          </>
         )}
       </nav>
 
@@ -80,28 +64,8 @@ function App() {
           </PrivateRoute>
         } />
       </Routes>
-    </div>
+    </BrowserRouter>
   );
 }
-
-// Estilos para os links
-const linkStyle = {
-  color: "#fff",
-  textDecoration: "none",
-  fontSize: "16px",
-  fontWeight: "bold",
-};
-
-// Estilo para o botão de logout
-const logoutButton = {
-  background: "#ff4d4d",
-  color: "#fff",
-  padding: "10px 20px",
-  border: "none",
-  borderRadius: "8px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "14px",
-};
 
 export default App;

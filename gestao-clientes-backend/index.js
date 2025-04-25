@@ -332,6 +332,32 @@ app.get('/clientes', autenticarToken, async (req, res) => {
   res.json(data);
 });
 
+// Rota para criar novo usuário
+app.post('/usuarios', autenticarToken, async (req, res) => {
+  const { email, senha, role } = req.body;
+
+  // Verificar se quem está criando é admin
+  if (req.usuario.role !== 'admin') {
+    return res.status(403).json({ error: 'Acesso negado. Somente administradores podem criar usuários.' });
+  }
+
+  if (!email || !senha || !role) {
+    return res.status(400).json({ error: 'Email, senha e role são obrigatórios.' });
+  }
+
+  // Inserir no Supabase
+  const { data, error } = await supabase
+    .from('usuarios')
+    .insert([{ email, senha, role }]);
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.status(201).json({ message: 'Usuário criado com sucesso', usuario: data });
+});
+
+
 const PORT = process.env.PORT || 3000;
 console.log("⏳ Tentando iniciar servidor na porta", PORT);
 app.listen(PORT, () => {

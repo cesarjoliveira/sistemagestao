@@ -5,7 +5,7 @@ function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [form, setForm] = useState({ nome: "", documento: "", email: "" });
 
-  const API_BASE = "http://sistemagestao.railway.internal"; // Aqui é seu backend local!
+  const API_BASE = "https://sistemagestao.railway.internal"; // Aqui é seu backend local!
 
   useEffect(() => {
     listarClientes();

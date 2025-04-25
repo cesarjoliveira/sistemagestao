@@ -7,7 +7,7 @@ function Login({ setUsuario }) {
   const [erro, setErro] = useState("");
   const navigate = useNavigate();
 
-  const API = "http://sistemagestao.railway.internal"; // ou seu Railway backend
+  const API = "https://sistemagestao.railway.internal"; // ou seu Railway backend
 
   const fazerLogin = async (e) => {
     e.preventDefault();

@@ -12,7 +12,7 @@ function Pedidos() {
     data_entrega: ""
   });
 
-  const API = "http://sistemagestao.railway.internal";
+  const API = "https://sistemagestao.railway.internal";
 
   useEffect(() => {
     listarClientes();

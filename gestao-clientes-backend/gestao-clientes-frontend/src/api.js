@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://sistemagestao.railway.internal", // ou Railway se já subiu
+  baseURL: "sistemagestao-production-b109.up.railway.app", // ou Railway se já subiu
 });
 
 API.interceptors.request.use((config) => {

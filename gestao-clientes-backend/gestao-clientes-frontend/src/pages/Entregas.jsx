@@ -3,7 +3,7 @@ import API from "../api";
 
 function Entregas() {
   const [entregas, setEntregas] = useState({});
-  const API = "https://sistemagestao.railway.internal"; // seu backend local
+  const API = "sistemagestao-production-b109.up.railway.app"; // seu backend local
 
   useEffect(() => {
     listarEntregas();

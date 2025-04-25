@@ -1,24 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import API from "../api";
 
 function CadastroUsuario() {
   const [form, setForm] = useState({ email: "", senha: "", role: "" });
   const [mensagem, setMensagem] = useState("");
+  const [usuarios, setUsuarios] = useState([]);
+
+  useEffect(() => {
+    listarUsuarios();
+  }, []);
 
   const cadastrar = async (e) => {
     e.preventDefault();
     try {
-      const res = await API.post("/usuarios", form);
+      await API.post("/usuarios", form);
       setMensagem("Usuário criado com sucesso!");
       setForm({ email: "", senha: "", role: "" });
+      listarUsuarios(); // Atualiza lista depois de cadastrar
     } catch (err) {
       setMensagem(err.response?.data?.error || "Erro ao cadastrar usuário.");
     }
   };
 
+  const listarUsuarios = async () => {
+    try {
+      const res = await API.get("/usuarios");
+      setUsuarios(res.data);
+    } catch (err) {
+      setMensagem("Erro ao listar usuários.");
+    }
+  };
+
+  const desativarUsuario = async (id) => {
+    const confirmacao = window.confirm("Tem certeza? Isso é irreversível!");
+    if (!confirmacao) return;
+
+    try {
+      await API.put(`/usuarios/${id}/desativar`);
+      setMensagem("Usuário desativado com sucesso!");
+      listarUsuarios();
+    } catch (err) {
+      setMensagem("Erro ao desativar usuário.");
+    }
+  };
+
   return (
     <div style={{ padding: 20 }}>
-      <h1>Cadastrar Novo Usuário</h1>
+      <h1>Usuários</h1>
+
       <form onSubmit={cadastrar} style={{ display: "flex", flexDirection: "column", width: 300, gap: 10 }}>
         <input
           type="email"
@@ -45,9 +74,32 @@ function CadastroUsuario() {
           <option value="logistica">Logística</option>
           <option value="admin">Administrador</option>
         </select>
-        <button type="submit">Cadastrar</button>
+        <button type="submit">Cadastrar Usuário</button>
       </form>
+
       {mensagem && <p>{mensagem}</p>}
+
+      <h2>Usuários Ativos</h2>
+      <table border="1" cellPadding="10" style={{ marginTop: 20 }}>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Função</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {usuarios.map((u) => (
+            <tr key={u.id}>
+              <td>{u.email}</td>
+              <td>{u.role}</td>
+              <td>
+                <button onClick={() => desativarUsuario(u.id)}>Excluir</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

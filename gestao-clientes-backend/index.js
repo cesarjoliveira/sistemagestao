@@ -282,6 +282,14 @@ app.post('/login', async (req, res) => {
     .eq('email', email)
     .single();
 
+    if (!usuario) {
+      return res.status(401).json({ error: 'Email ou senha inválidos (usuário não encontrado)' });
+    }
+    
+    if (!usuario.ativo) {
+      return res.status(403).json({ error: 'Usuário desativado. Contate o administrador.' });
+    }
+
   console.log("📦 Resultado do Supabase:", usuario);
   if (error) {
     console.log("❌ Erro do Supabase:", error);
@@ -362,6 +370,24 @@ app.post('/usuarios', autenticarToken, async (req, res) => {
   res.status(201).json({ message: 'Usuário criado com sucesso', usuario: data });
 });
 
+app.put('/usuarios/:id/desativar', autenticarToken, async (req, res) => {
+  const { id } = req.params;
+
+  if (req.usuario.role !== 'admin') {
+    return res.status(403).json({ error: 'Acesso negado.' });
+  }
+
+  const { data, error } = await supabase
+    .from('usuarios')
+    .update({ ativo: false })
+    .eq('id', id);
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json({ message: 'Usuário desativado com sucesso', usuario: data });
+});
 
 const PORT = process.env.PORT || 3000;
 console.log("⏳ Tentando iniciar servidor na porta", PORT);

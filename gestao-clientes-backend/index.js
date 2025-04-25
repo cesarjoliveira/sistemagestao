@@ -336,24 +336,28 @@ app.get('/clientes', autenticarToken, async (req, res) => {
 app.post('/usuarios', autenticarToken, async (req, res) => {
   const { email, senha, role } = req.body;
 
-  // Verificar se quem está criando é admin
+  console.log("🔵 Tentativa de criação de usuário:", req.usuario, email, senha, role);
+
   if (req.usuario.role !== 'admin') {
+    console.log("⛔ Acesso negado: não é admin");
     return res.status(403).json({ error: 'Acesso negado. Somente administradores podem criar usuários.' });
   }
 
   if (!email || !senha || !role) {
+    console.log("⛔ Campos obrigatórios faltando");
     return res.status(400).json({ error: 'Email, senha e role são obrigatórios.' });
   }
 
-  // Inserir no Supabase
   const { data, error } = await supabase
     .from('usuarios')
     .insert([{ email, senha, role }]);
 
   if (error) {
+    console.log("❌ Erro ao cadastrar usuário:", error);
     return res.status(500).json({ error: error.message });
   }
 
+  console.log("✅ Usuário criado com sucesso:", data);
   res.status(201).json({ message: 'Usuário criado com sucesso', usuario: data });
 });
 

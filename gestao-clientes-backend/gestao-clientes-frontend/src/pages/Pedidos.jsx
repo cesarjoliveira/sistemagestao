@@ -12,7 +12,7 @@ function Pedidos() {
     data_entrega: ""
   });
 
-  const API = "sistemagestao-production-b109.up.railway.app";
+  const API = "https://sistemagestao-production.up.railway.app";
 
   useEffect(() => {
     listarClientes();

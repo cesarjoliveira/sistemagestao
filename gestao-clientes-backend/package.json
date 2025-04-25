@@ -14,7 +14,8 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "pdfkit": "^0.17.0"
+    "pdfkit": "^0.17.0",
+    "react-hot-toast": "^2.5.2"
   },
   "description": ""
 }

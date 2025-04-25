@@ -7,23 +7,28 @@ function Login({ setUsuario }) {
   const [erro, setErro] = useState("");
   const navigate = useNavigate();
 
-  const API = "https://sistemagestao-production-b109.up.railway.app"; // ou seu Railway backend
+  const API = "https://sistemagestao-production-b109.up.railway.app"; // 🚀 sua API correta
 
   const fazerLogin = async (e) => {
     e.preventDefault();
+
     try {
       const res = await axios.post(`${API}/login`, form);
+      const { token, role } = res.data;
 
-      // 🚀 NOVO: salva token e role separados
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", role);
 
-      // 🚀 NOVO: atualiza o usuário logado no app
-      setUsuario({ role: res.data.role });
+      setUsuario({ role }); // 🔵 Atualiza o usuário no App.jsx
 
-      navigate("/");
+      console.log("✅ Login realizado, navegando...");
+      
+      // 🔥 Aguarda um pequeno tempo para garantir que o usuário foi salvo
+      setTimeout(() => {
+        navigate("/");
+      }, 100); // Pequeno delay para dar tempo do React atualizar o estado
     } catch (err) {
-      console.error("Erro ao fazer login:", err);
+      console.error("🔴 Erro ao fazer login:", err.response ? err.response.data : err.message);
       setErro("Email ou senha inválidos");
     }
   };

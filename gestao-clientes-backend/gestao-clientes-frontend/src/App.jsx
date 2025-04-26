@@ -35,6 +35,7 @@ function App() {
   <>
     {["vendedor", "admin"].includes(usuario.role) && <Link to="/">Clientes</Link>}
     {["vendedor", "emissor", "admin"].includes(usuario.role) && <Link to="/pedidos">Pedidos</Link>}
+    {["vendedor", "admin"].includes(usuario.role) && <Link to="/GerarPedido">Gerar Pedido</Link>}
     {usuario && usuario.role === "admin" && <Link to="/usuarios">Cadastrar Usuário</Link>}
     {["logistica", "admin"].includes(usuario.role) && <Link to="/entregas">Entregas</Link>}
     <button onClick={() => {
@@ -70,7 +71,7 @@ function App() {
             <CadastroUsuario />
           </PrivateRoute>
         } />
-        <Route path="/gerar-pedido" element={
+        <Route path="/GerarPedido" element={
   <PrivateRoute usuario={usuario} roles={["vendedor", "admin"]}>
     <GerarPedido />
   </PrivateRoute>

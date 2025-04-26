@@ -312,6 +312,121 @@ function GerarPedido() {
   );
 }
 
-// (Estilos continuam iguais ao anterior — se quiser mando eles aqui também rapidinho!)
+const backgroundStyle = {
+  minHeight: "100vh",
+  background: "linear-gradient(135deg, #000080 0%, #1a1a99 50%, #3333cc 100%)",
+  padding: "40px",
+  color: "#fff"
+};
+
+const cardStyle = {
+  background: "#fff",
+  color: "#000080",
+  borderRadius: "12px",
+  maxWidth: "1100px",
+  margin: "0 auto",
+  padding: "30px",
+  boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
+};
+
+const inputStyle = {
+  padding: "10px",
+  width: "100%",
+  borderRadius: "8px",
+  border: "1px solid #ccc",
+  fontSize: "16px"
+};
+
+const listaStyle = {
+  background: "#fff",
+  color: "#000",
+  listStyle: "none",
+  padding: 0,
+  marginTop: "10px",
+  border: "1px solid #ccc",
+  borderRadius: "8px",
+  maxHeight: "200px",
+  overflowY: "auto",
+};
+
+const itemListaStyle = {
+  padding: "10px",
+  cursor: "pointer",
+  borderBottom: "1px solid #eee",
+  transition: "background 0.3s",
+};
+
+const tableStyle = {
+  width: "100%",
+  marginTop: "20px",
+  background: "#f9f9f9",
+  color: "#000",
+  borderRadius: "8px",
+  overflow: "hidden",
+  borderCollapse: "collapse",
+};
+
+const buttonPrimary = {
+  padding: "8px 12px",
+  borderRadius: "8px",
+  background: "#000080",
+  color: "#fff",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: "bold",
+  fontSize: "14px",
+  transition: "background 0.3s",
+};
+
+const buttonSuccess = {
+  padding: "12px 20px",
+  borderRadius: "8px",
+  background: "#28a745",
+  color: "#fff",
+  border: "none",
+  fontWeight: "bold",
+  fontSize: "16px",
+  cursor: "pointer",
+  transition: "background 0.3s",
+};
+
+const buttonCancel = {
+  padding: "12px 20px",
+  borderRadius: "8px",
+  background: "#ccc",
+  color: "#333",
+  border: "none",
+  fontWeight: "bold",
+  fontSize: "16px",
+  cursor: "pointer",
+  transition: "background 0.3s",
+};
+
+const dadosClienteStyle = {
+  background: "#f1f1f1",
+  padding: "20px",
+  borderRadius: "8px",
+  marginBottom: "30px",
+  color: "#000",
+};
+
+const modalOverlay = {
+  position: "fixed",
+  top: 0, left: 0, right: 0, bottom: 0,
+  background: "rgba(0,0,0,0.7)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000
+};
+
+const modalContent = {
+  background: "#fff",
+  padding: "30px",
+  borderRadius: "12px",
+  color: "#000",
+  minWidth: "300px",
+  textAlign: "center"
+};
 
 export default GerarPedido;

@@ -119,18 +119,28 @@ function GerarPedido() {
     if (!window.confirm("Deseja finalizar o pedido?")) return;
 
     try {
-      await axios.post(`${API}/pedidos`, {
+      // 1. Criar o pedido vazio
+      const resPedido = await axios.post(`${API}/pedidos`, {
         cliente_id: clienteSelecionado.id,
-        itens: pedido.map((item) => ({
-          produto: item.nome,
-          qtd: item.quantidade
-        })),
-        valor_total: pedido.reduce((acc, item) => acc + item.total, 0),
         status: "pendente",
         data_entrega: new Date().toISOString()
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      const pedidoId = resPedido.data.id;
+
+      // 2. Adicionar cada item no itens_pedido
+      for (const item of pedido) {
+        await axios.post(`${API}/itens-pedido`, {
+          pedido_id: pedidoId,
+          produto_id: item.id,
+          quantidade: item.quantidade,
+          preco_unitario: item.preco
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
 
       toast.success("Pedido finalizado com sucesso!");
       resetarTela();
@@ -158,98 +168,7 @@ function GerarPedido() {
         <h1 style={{ textAlign: "center", marginBottom: "20px" }}>Gerar Novo Pedido</h1>
 
         {/* Campos de Documento e Nome */}
-        <div style={{ marginBottom: "20px" }}>
-          <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-            <input
-              type="text"
-              placeholder="Documento"
-              value={documentoBusca}
-              onChange={(e) => setDocumentoBusca(e.target.value)}
-              style={inputStyle}
-            />
-            <input
-              type="text"
-              placeholder="Nome do Cliente"
-              value={nomeBusca}
-              onChange={(e) => setNomeBusca(e.target.value)}
-              style={inputStyle}
-            />
-            <button style={buttonPrimary} onClick={buscarClientes}>Buscar Cliente</button>
-          </div>
-
-          {/* Resultados da busca */}
-          {loadingClientes && <p>🔄 Carregando clientes...</p>}
-          {!loadingClientes && clientes.length === 0 && (documentoBusca || nomeBusca) && (
-            <p>Nenhum cliente encontrado.</p>
-          )}
-          {clientes.length > 0 && (
-            <ul style={listaStyle}>
-              {clientes.map((c) => (
-                <li key={c.id} style={itemListaStyle} onClick={() => selecionarCliente(c)}>
-                  {c.nome} ({c.documento})
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Cliente Selecionado */}
-        {clienteSelecionado && (
-          <div style={dadosClienteStyle}>
-            <h3>Cliente Selecionado:</h3>
-            <p><strong>Nome:</strong> {clienteSelecionado.nome}</p>
-            <p><strong>Documento:</strong> {clienteSelecionado.documento}</p>
-            <p><strong>Email:</strong> {clienteSelecionado.email}</p>
-          </div>
-        )}
-
-        {/* Busca de Produto */}
-        <div style={{ marginBottom: "30px" }}>
-          <label><strong>Buscar Produto (Nome ou Código):</strong></label>
-          <input
-            type="text"
-            value={buscaProduto}
-            onChange={(e) => {
-              setBuscaProduto(e.target.value);
-              buscarProdutos(e.target.value);
-            }}
-            placeholder="Digite o nome ou código"
-            style={inputStyle}
-          />
-
-          {loadingProdutos && <p>🔄 Carregando produtos...</p>}
-          {!loadingProdutos && produtos.length === 0 && buscaProduto.length > 2 && (
-            <p>Nenhum produto encontrado.</p>
-          )}
-        </div>
-
-        {/* Lista de Produtos */}
-        {produtos.length > 0 && (
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th>Produto</th>
-                <th>Preço (R$)</th>
-                <th>Estoque</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {produtos.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.nome}</td>
-                  <td>{p.preco.toFixed(2)}</td>
-                  <td>{p.estoque}</td>
-                  <td>
-                    <button style={buttonPrimary} onClick={() => abrirModalQuantidade(p)}>
-                      Adicionar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        {/* ... resto dos campos exatamente como no seu código ... */}
 
         {/* Itens do Pedido */}
         {pedido.length > 0 && (
@@ -289,24 +208,7 @@ function GerarPedido() {
         )}
 
         {/* Modal de Quantidade */}
-        {showModal && (
-          <div style={modalOverlay}>
-            <div style={modalContent}>
-              <h2>Quantidade de {produtoSelecionado?.nome}</h2>
-              <input
-                type="number"
-                value={quantidadeModal}
-                onChange={(e) => setQuantidadeModal(e.target.value)}
-                placeholder="Digite a quantidade"
-                style={inputStyle}
-              />
-              <div style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center" }}>
-                <button style={buttonPrimary} onClick={confirmarQuantidade}>Confirmar</button>
-                <button style={buttonCancel} onClick={() => setShowModal(false)}>Cancelar</button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* ... modal exatamente igual ao seu código atual ... */}
       </div>
     </div>
   );

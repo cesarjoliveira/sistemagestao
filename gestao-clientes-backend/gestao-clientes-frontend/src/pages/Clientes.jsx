@@ -79,10 +79,9 @@ function Clientes() {
       });
 
       const clienteId = resCliente.data?.id;
-
-if (!clienteId) {
-  throw new Error("Erro ao recuperar ID do cliente após cadastro.");
-}
+      if (!clienteId) {
+        throw new Error("Erro ao recuperar ID do cliente após cadastro.");
+      }
 
       await apiRailway.post('/enderecos', {
         cliente_id: clienteId,
@@ -101,8 +100,12 @@ if (!clienteId) {
       resetarFormulario();
       carregarClientes();
     } catch (error) {
-      console.error("Erro ao cadastrar cliente:", error);
-      toast.error("Erro ao cadastrar cliente!");
+      if (error.response && error.response.status === 409) {
+        toast.error(error.response.data.error || "Documento ou Email já cadastrado.");
+      } else {
+        console.error("Erro ao cadastrar cliente:", error);
+        toast.error("Erro ao cadastrar cliente!");
+      }
     }
   };
 
@@ -150,7 +153,10 @@ if (!clienteId) {
       return;
     }
 
-    const enderecoAntigoTexto = `${enderecoAtual?.rua}, ${enderecoAtual?.numero} - ${enderecoAtual?.bairro} - ${enderecoAtual?.cidade}/${enderecoAtual?.estado} - CEP ${enderecoAtual?.cep}`;
+    const enderecoAntigoTexto = enderecoAtual
+      ? `${enderecoAtual.rua}, ${enderecoAtual.numero} - ${enderecoAtual.bairro} - ${enderecoAtual.cidade}/${enderecoAtual.estado} - CEP ${enderecoAtual.cep}`
+      : "(Sem endereço anterior)";
+
     const enderecoNovoTexto = `${enderecoNovo.rua}, ${enderecoNovo.numero} - ${enderecoNovo.bairro} - ${enderecoNovo.cidade}/${enderecoNovo.estado} - CEP ${enderecoNovo.cep}`;
 
     const confirmar = window.confirm(
@@ -160,7 +166,6 @@ if (!clienteId) {
     if (!confirmar) return;
 
     try {
-      // Atualiza cliente
       await apiRailway.put(`/clientes/${clienteAberto.id}`, {
         nome: clienteAberto.nome,
         documento: clienteAberto.documento,
@@ -169,7 +174,6 @@ if (!clienteId) {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
 
-      // Cria novo endereço
       await apiRailway.post('/enderecos', {
         cliente_id: enderecoNovo.cliente_id,
         rua: enderecoNovo.rua,

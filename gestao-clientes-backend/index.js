@@ -309,6 +309,50 @@ app.get('/produtos', autenticarToken, async (req, res) => {
   res.json(data);
 });
 
+app.post('/itens-pedido', async (req, res) => {
+  const { pedido_id, produto_id, quantidade, preco_unitario } = req.body;
+  const { data, error } = await supabase
+    .from('itens_pedido')
+    .insert([{ pedido_id, produto_id, quantidade, preco_unitario }]);
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.get('/itens-pedido/:pedidoId', async (req, res) => {
+  const { pedidoId } = req.params;
+  const { data, error } = await supabase
+    .from('itens_pedido')
+    .select('*')
+    .eq('pedido_id', pedidoId);
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/pedidos/:pedidoId/atualizar-total', async (req, res) => {
+  const { pedidoId } = req.params;
+
+  const { data: itens, error: errorItens } = await supabase
+    .from('itens_pedido')
+    .select('quantidade, preco_unitario')
+    .eq('pedido_id', pedidoId);
+
+  if (errorItens) return res.status(400).json({ error: errorItens.message });
+
+  const valorTotal = itens.reduce((total, item) => {
+    return total + item.quantidade * parseFloat(item.preco_unitario);
+  }, 0);
+
+  const { error: errorUpdate } = await supabase
+    .from('pedidos')
+    .update({ valor_total: valorTotal })
+    .eq('id', pedidoId);
+
+  if (errorUpdate) return res.status(400).json({ error: errorUpdate.message });
+
+  res.json({ valor_total: valorTotal });
+});
 
 // -------------------- Subir Servidor --------------------
 const PORT = process.env.PORT || 3000;

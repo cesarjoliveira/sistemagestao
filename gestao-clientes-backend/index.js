@@ -64,6 +64,12 @@ app.post('/login', async (req, res) => {
 // -------------------- Rotas Protegidas --------------------
 
 // CLIENTES
+app.get('/clientes', autenticarToken, async (req, res) => {
+  const { data, error } = await supabase.from('clientes').select('*');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
 app.post('/clientes', autenticarToken, async (req, res) => {
   const { nome, documento, email } = req.body;
 
@@ -113,6 +119,7 @@ app.post('/clientes', autenticarToken, async (req, res) => {
 
   res.status(201).json(data[0]);
 });
+
 
 // 🔥 Atualizar cliente (parcial)
 app.put('/clientes/:id', autenticarToken, async (req, res) => {

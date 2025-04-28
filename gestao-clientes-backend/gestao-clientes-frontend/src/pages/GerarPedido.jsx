@@ -1,11 +1,8 @@
 import { useState } from "react";
-import axios from "axios";
+import { apiRailway, apiSupabase } from "../services/axiosInstances";
 import toast, { Toaster } from "react-hot-toast";
 
 function GerarPedido() {
-  const API = "https://sistemagestao-production-b109.up.railway.app";
-  const token = localStorage.getItem("token");
-
   const [documentoBusca, setDocumentoBusca] = useState("");
   const [nomeBusca, setNomeBusca] = useState("");
   const [clientes, setClientes] = useState([]);
@@ -29,8 +26,10 @@ function GerarPedido() {
 
     try {
       setLoadingClientes(true);
-      const res = await axios.get(`${API}/clientes`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await apiRailway.get('/clientes', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
       });
       const todosClientes = res.data;
 
@@ -57,8 +56,10 @@ function GerarPedido() {
   const buscarProdutos = async (texto) => {
     try {
       setLoadingProdutos(true);
-      const res = await axios.get(`${API}/produtos?busca=${texto}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await apiRailway.get(`/produtos?busca=${texto}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
       });
       setProdutos(res.data);
     } catch (error) {
@@ -119,26 +120,30 @@ function GerarPedido() {
     if (!window.confirm("Deseja finalizar o pedido?")) return;
 
     try {
-      // 1. Criar o pedido vazio
-      const resPedido = await axios.post(`${API}/pedidos`, {
+      // 1. Criar pedido vazio
+      const resPedido = await apiRailway.post('/pedidos', {
         cliente_id: clienteSelecionado.id,
         status: "pendente",
         data_entrega: new Date().toISOString()
       }, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
       });
 
       const pedidoId = resPedido.data.id;
 
-      // 2. Adicionar cada item no itens_pedido
+      // 2. Adicionar itens
       for (const item of pedido) {
-        await axios.post(`${API}/itens-pedido`, {
+        await apiRailway.post('/itens-pedido', {
           pedido_id: pedidoId,
           produto_id: item.id,
           quantidade: item.quantidade,
           preco_unitario: item.preco
         }, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
         });
       }
 
@@ -167,7 +172,7 @@ function GerarPedido() {
       <div style={cardStyle}>
         <h1 style={{ textAlign: "center", marginBottom: "20px" }}>Gerar Novo Pedido</h1>
 
-        {/* Campos de Documento e Nome */}
+        {/* Buscar cliente */}
         <div style={{ marginBottom: "20px" }}>
           <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
             <input
@@ -202,6 +207,7 @@ function GerarPedido() {
           )}
         </div>
 
+        {/* Cliente selecionado */}
         {clienteSelecionado && (
           <div style={dadosClienteStyle}>
             <h3>Cliente Selecionado:</h3>
@@ -211,7 +217,7 @@ function GerarPedido() {
           </div>
         )}
 
-        {/* Busca de Produto */}
+        {/* Buscar Produto */}
         <div style={{ marginBottom: "30px" }}>
           <label><strong>Buscar Produto (Nome ou Código):</strong></label>
           <input
@@ -225,12 +231,9 @@ function GerarPedido() {
             style={inputStyle}
           />
           {loadingProdutos && <p>🔄 Carregando produtos...</p>}
-          {!loadingProdutos && produtos.length === 0 && buscaProduto.length > 2 && (
-            <p>Nenhum produto encontrado.</p>
-          )}
         </div>
 
-        {/* Lista de Produtos */}
+        {/* Lista de produtos */}
         {produtos.length > 0 && (
           <table style={tableStyle}>
             <thead>
@@ -319,7 +322,7 @@ function GerarPedido() {
   );
 }
 
-// ----- ESTILOS -----
+// Estilos
 const backgroundStyle = { minHeight: "100vh", background: "linear-gradient(135deg, #000080 0%, #1a1a99 50%, #3333cc 100%)", padding: "40px", color: "#fff" };
 const cardStyle = { background: "#fff", color: "#000080", borderRadius: "12px", maxWidth: "1100px", margin: "0 auto", padding: "30px", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" };
 const inputStyle = { padding: "10px", width: "100%", borderRadius: "8px", border: "1px solid #ccc", fontSize: "16px" };

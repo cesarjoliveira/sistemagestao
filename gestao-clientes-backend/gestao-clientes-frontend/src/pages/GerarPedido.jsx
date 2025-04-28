@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiRailway, apiSupabase } from "../services/axiosInstances";
+import { apiRailway } from "../services/axiosInstances";
 import toast, { Toaster } from "react-hot-toast";
 
 function GerarPedido() {
@@ -106,6 +106,15 @@ function GerarPedido() {
     toast.success("Produto adicionado ao pedido!");
   };
 
+  const calcularDataEntrega = () => {
+    if (pedido.length === 0) return new Date();
+
+    const diasMaximo = Math.max(...pedido.map(item => item.dias_entrega || 5));
+    const dataEntrega = new Date();
+    dataEntrega.setDate(dataEntrega.getDate() + diasMaximo);
+    return dataEntrega;
+  };
+
   const finalizarPedido = async () => {
     if (!clienteSelecionado) {
       toast.error("Selecione um cliente!");
@@ -124,7 +133,7 @@ function GerarPedido() {
       const resPedido = await apiRailway.post('/pedidos', {
         cliente_id: clienteSelecionado.id,
         status: "pendente",
-        data_entrega: new Date().toISOString()
+        data_entrega: calcularDataEntrega().toISOString()
       }, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -286,8 +295,11 @@ function GerarPedido() {
               </tbody>
             </table>
 
-            <h3 style={{ textAlign: "right", marginTop: "20px" }}>
+            <h3 style={{ textAlign: "right", marginTop: "10px" }}>
               Total Geral: R$ {totalPedido.toFixed(2)}
+            </h3>
+            <h3 style={{ textAlign: "right", marginTop: "10px" }}>
+              Previsão de Entrega: {calcularDataEntrega().toLocaleDateString('pt-BR')}
             </h3>
 
             <div style={{ textAlign: "right", marginTop: "30px" }}>
@@ -322,7 +334,7 @@ function GerarPedido() {
   );
 }
 
-// Estilos
+// ----- ESTILOS -----
 const backgroundStyle = { minHeight: "100vh", background: "linear-gradient(135deg, #000080 0%, #1a1a99 50%, #3333cc 100%)", padding: "40px", color: "#fff" };
 const cardStyle = { background: "#fff", color: "#000080", borderRadius: "12px", maxWidth: "1100px", margin: "0 auto", padding: "30px", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" };
 const inputStyle = { padding: "10px", width: "100%", borderRadius: "8px", border: "1px solid #ccc", fontSize: "16px" };

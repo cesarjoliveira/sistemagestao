@@ -1,48 +1,34 @@
-// index.js (versão atualizada)
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const supabase = require('./supabaseClient');
 require('dotenv').config();
 const PDFDocument = require('pdfkit');
+const { Readable } = require('stream');
 
 console.log("▶️  Iniciando API de Gestão de Clientes e Pedidos");
-
-supabase
-  .from('clientes')
-  .select('*')
-  .then(({ data, error }) => {
-    if (error) {
-      console.error("❌ Erro de conexão ao Supabase:", error);
-    } else {
-      console.log(`✅ Conexão Supabase OK, ${data.length} clientes encontrados`);
-    }
-  })
-  .catch(err => {
-    console.error("❌ Erro de exceção ao conectar no Supabase:", err);
-  });
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-console.log("🛠️  Middlewares aplicados (CORS, JSON)");
 
 // -------------------- Middleware de Autenticação --------------------
 function autenticarToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.sendStatus(401); // Sem token
+  if (!token) return res.sendStatus(401);
 
   jwt.verify(token, process.env.JWT_SECRET, (err, usuario) => {
-    if (err) return res.sendStatus(403); // Token inválido
+    if (err) return res.sendStatus(403);
     req.usuario = usuario;
     next();
   });
 }
 
 // -------------------- Rotas Públicas --------------------
+
+// Teste
 app.get('/', (req, res) => {
   res.send('API de Gestão de Clientes e Pedidos está rodando!');
 });
@@ -63,7 +49,7 @@ app.post('/login', async (req, res) => {
   }
 
   if (!usuario.ativo) {
-    return res.status(403).json({ error: 'Usuário desativado.' });
+    return res.status(403).json({ error: 'Usuário desativado' });
   }
 
   const token = jwt.sign(
@@ -80,7 +66,7 @@ app.post('/login', async (req, res) => {
 // CLIENTES
 app.get('/clientes', autenticarToken, async (req, res) => {
   const { data, error } = await supabase.from('clientes').select('*');
-  if (error) return res.status(500).json({ error });
+  if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
 
@@ -89,48 +75,68 @@ app.post('/clientes', autenticarToken, async (req, res) => {
   const { data, error } = await supabase
     .from('clientes')
     .insert([{ nome, documento, email }]);
-  if (error) return res.status(500).json({ error });
+  if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
 });
 
-// PRODUTOS
-app.get('/produtos', autenticarToken, async (req, res) => {
-  const { busca } = req.query;
-  let query = supabase.from('produtos').select('*');
+// 🔥 Atualizar cliente (parcial)
+app.put('/clientes/:id', autenticarToken, async (req, res) => {
+  const { id } = req.params;
+  const { nome, documento, email } = req.body;
 
-  if (busca) {
-    query = query.or(`nome.ilike.%${busca}%,codigo.ilike.%${busca}%`);
-  }
+  const { data, error } = await supabase
+    .from('clientes')
+    .update({ nome, documento, email })
+    .eq('id', id)
+    .select()
+    .single();
 
-  const { data, error } = await query;
-  if (error) return res.status(500).json({ error });
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ message: "Cliente atualizado com sucesso", cliente: data });
+});
+
+// ENDEREÇOS
+app.get('/enderecos/:clienteId', autenticarToken, async (req, res) => {
+  const { clienteId } = req.params;
+  const { data, error } = await supabase
+    .from('enderecos')
+    .select('*')
+    .eq('cliente_id', clienteId);
+
+  if (error) return res.status(500).json({ error: error.message });
   res.json(data);
+});
+
+app.post('/enderecos', autenticarToken, async (req, res) => {
+  const { cliente_id, rua, numero, bairro, cidade, estado, cep, complemento } = req.body;
+  const { data, error } = await supabase
+    .from('enderecos')
+    .insert([{ cliente_id, rua, numero, bairro, cidade, estado, cep, complemento }]);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
 });
 
 // PEDIDOS
 app.get('/pedidos', autenticarToken, async (req, res) => {
-  const { data, error } = await supabase.rpc('buscar_pedidos_com_total');
-  if (error) return res.status(500).json({ error });
+  const { data, error } = await supabase.from('pedidos').select('*');
+  if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
 
 app.post('/pedidos', autenticarToken, async (req, res) => {
   const { cliente_id, status, data_entrega } = req.body;
-
   const { data, error } = await supabase
     .from('pedidos')
-    .insert([{ 
-      cliente_id, 
-      status: status || 'pendente', 
-      data_entrega 
-    }])
-    .select();
+    .insert([{ cliente_id, status: status || 'pendente', data_entrega }])
+    .select()
+    .single();
 
-  if (error) return res.status(500).json({ error });
-  res.status(201).json(data[0]);
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
 });
 
-// Atualizar status do pedido
 app.put('/pedidos/:id/status', autenticarToken, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -144,19 +150,19 @@ app.put('/pedidos/:id/status', autenticarToken, async (req, res) => {
     .select()
     .single();
 
-  if (error) return res.status(500).json({ error });
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ message: 'Status atualizado com sucesso', pedido: data });
 });
 
-// ITENS DO PEDIDO
+// ITENS PEDIDO
 app.post('/itens-pedido', autenticarToken, async (req, res) => {
   const { pedido_id, produto_id, quantidade, preco_unitario } = req.body;
   const { data, error } = await supabase
     .from('itens_pedido')
     .insert([{ pedido_id, produto_id, quantidade, preco_unitario }]);
 
-  if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json(data);
 });
 
 app.get('/itens-pedido/:pedidoId', autenticarToken, async (req, res) => {
@@ -170,58 +176,49 @@ app.get('/itens-pedido/:pedidoId', autenticarToken, async (req, res) => {
   res.json(data);
 });
 
-// USUÁRIOS
-app.get('/usuarios', autenticarToken, async (req, res) => {
-  if (req.usuario.role !== 'admin') {
-    return res.status(403).json({ error: 'Acesso negado.' });
+app.post('/pedidos/:pedidoId/atualizar-total', autenticarToken, async (req, res) => {
+  const { pedidoId } = req.params;
+
+  const { data: itens, error: errorItens } = await supabase
+    .from('itens_pedido')
+    .select('quantidade, preco_unitario')
+    .eq('pedido_id', pedidoId);
+
+  if (errorItens) return res.status(400).json({ error: errorItens.message });
+
+  const valorTotal = itens.reduce((total, item) => {
+    return total + item.quantidade * parseFloat(item.preco_unitario);
+  }, 0);
+
+  const { error: errorUpdate } = await supabase
+    .from('pedidos')
+    .update({ valor_total: valorTotal })
+    .eq('id', pedidoId);
+
+  if (errorUpdate) return res.status(400).json({ error: errorUpdate.message });
+
+  res.json({ valor_total: valorTotal });
+});
+
+// PRODUTOS
+app.get('/produtos', autenticarToken, async (req, res) => {
+  const { busca } = req.query;
+
+  let query = supabase.from('produtos').select('*');
+
+  if (busca) {
+    query = query.or(`nome.ilike.%${busca}%,codigo.ilike.%${busca}%`);
   }
 
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('id, email, role, ativo')
-    .eq('ativo', true);
+  const { data, error } = await query;
 
-  if (error) return res.status(500).json({ error });
+  if (error) return res.status(500).json({ error: error.message });
+
   res.json(data);
-});
-
-app.post('/usuarios', autenticarToken, async (req, res) => {
-  if (req.usuario.role !== 'admin') {
-    return res.status(403).json({ error: 'Acesso negado.' });
-  }
-
-  const { email, senha, role } = req.body;
-  if (!email || !senha || !role) {
-    return res.status(400).json({ error: 'Email, senha e role são obrigatórios.' });
-  }
-
-  const { data, error } = await supabase
-    .from('usuarios')
-    .insert([{ email, senha, role }]);
-
-  if (error) return res.status(500).json({ error });
-  res.status(201).json({ message: 'Usuário criado com sucesso', usuario: data });
-});
-
-app.put('/usuarios/:id/desativar', autenticarToken, async (req, res) => {
-  const { id } = req.params;
-
-  if (req.usuario.role !== 'admin') {
-    return res.status(403).json({ error: 'Acesso negado.' });
-  }
-
-  const { data, error } = await supabase
-    .from('usuarios')
-    .update({ ativo: false })
-    .eq('id', id);
-
-  if (error) return res.status(500).json({ error });
-  res.json({ message: 'Usuário desativado com sucesso', usuario: data });
 });
 
 // -------------------- Subir Servidor --------------------
 const PORT = process.env.PORT || 3000;
-console.log("⏳ Tentando iniciar servidor na porta", PORT);
 app.listen(PORT, () => {
   console.log(`✅ Servidor rodando na porta ${PORT}`);
 });

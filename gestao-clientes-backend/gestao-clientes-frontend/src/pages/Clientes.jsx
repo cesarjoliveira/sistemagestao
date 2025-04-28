@@ -1,130 +1,229 @@
-import { useEffect, useState } from "react";
-import API from "../api";
-import axios from "axios"; // faltava importar aqui
+import { useState, useEffect } from "react";
+import { apiRailway } from "../services/axiosInstances";
+import toast, { Toaster } from "react-hot-toast";
 
 function Clientes() {
   const [clientes, setClientes] = useState([]);
-  const [form, setForm] = useState({ nome: "", documento: "", email: "" });
+  const [documentoBusca, setDocumentoBusca] = useState("");
+  const [nomeBusca, setNomeBusca] = useState("");
+  const [loadingClientes, setLoadingClientes] = useState(false);
 
-  const API_BASE = "https://sistemagestao-production-b109.up.railway.app";
+  const [novoNome, setNovoNome] = useState("");
+  const [novoDocumento, setNovoDocumento] = useState("");
+  const [novoEmail, setNovoEmail] = useState("");
+
+  const [editandoId, setEditandoId] = useState(null);
+  const [editNome, setEditNome] = useState("");
+  const [editDocumento, setEditDocumento] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
   useEffect(() => {
-    listarClientes();
+    carregarClientes();
   }, []);
 
-  const listarClientes = async () => {
+  const carregarClientes = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/clientes`);
+      setLoadingClientes(true);
+      const res = await apiRailway.get('/clientes', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
       setClientes(res.data);
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao carregar clientes:", error);
+    } finally {
+      setLoadingClientes(false);
     }
   };
 
-  const cadastrarCliente = async (e) => {
-    e.preventDefault();
+  const filtrarClientes = () => {
+    if (!documentoBusca && !nomeBusca) return clientes;
+
+    return clientes.filter(cliente => {
+      const nomeOk = nomeBusca ? cliente.nome.toLowerCase().includes(nomeBusca.toLowerCase()) : true;
+      const documentoOk = documentoBusca ? cliente.documento.includes(documentoBusca) : true;
+      return nomeOk && documentoOk;
+    });
+  };
+
+  const cadastrarCliente = async () => {
+    if (!novoNome || !novoDocumento) {
+      toast.error("Nome e Documento são obrigatórios!");
+      return;
+    }
+
     try {
-      await API.post("/clientes", form); // corrigido para usar API.js
-      setForm({ nome: "", documento: "", email: "" });
-      listarClientes();
+      await apiRailway.post('/clientes', {
+        nome: novoNome,
+        documento: novoDocumento,
+        email: novoEmail
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+
+      toast.success("Cliente cadastrado com sucesso!");
+      setNovoNome("");
+      setNovoDocumento("");
+      setNovoEmail("");
+      carregarClientes();
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao cadastrar cliente:", error);
+      toast.error("Erro ao cadastrar cliente!");
+    }
+  };
+
+  const iniciarEdicao = (cliente) => {
+    setEditandoId(cliente.id);
+    setEditNome(cliente.nome);
+    setEditDocumento(cliente.documento);
+    setEditEmail(cliente.email);
+  };
+
+  const cancelarEdicao = () => {
+    setEditandoId(null);
+    setEditNome("");
+    setEditDocumento("");
+    setEditEmail("");
+  };
+
+  const salvarEdicao = async () => {
+    if (!editNome || !editDocumento) {
+      toast.error("Nome e Documento são obrigatórios!");
+      return;
+    }
+
+    try {
+      await apiRailway.put(`/clientes/${editandoId}`, {
+        nome: editNome,
+        documento: editDocumento,
+        email: editEmail
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+
+      toast.success("Cliente atualizado com sucesso!");
+      cancelarEdicao();
+      carregarClientes();
+    } catch (error) {
+      console.error("Erro ao atualizar cliente:", error);
+      toast.error("Erro ao atualizar cliente!");
     }
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #000080 0%, #1a1a99 50%, #3333cc 100%)",
-      color: "#fff",
-      padding: "40px"
-    }}>
-      <div style={{
-        background: "#fff",
-        color: "#000080",
-        borderRadius: "12px",
-        maxWidth: "800px",
-        margin: "0 auto",
-        padding: "30px",
-        boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
-      }}>
-        <h1 style={{ textAlign: "center", marginBottom: "20px" }}>Cadastro de Clientes</h1>
+    <div style={backgroundStyle}>
+      <Toaster position="top-center" reverseOrder={false} />
+      <div style={cardStyle}>
+        <h1 style={{ textAlign: "center", marginBottom: "20px" }}>Clientes</h1>
 
-        <form onSubmit={cadastrarCliente} style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "15px",
-          marginBottom: "30px"
-        }}>
-          <input
-            type="text"
-            placeholder="Nome"
-            value={form.nome}
-            onChange={(e) => setForm({ ...form, nome: e.target.value })}
-            required
-            style={inputStyle}
-          />
-          <input
-            type="text"
-            placeholder="Documento"
-            value={form.documento}
-            onChange={(e) => setForm({ ...form, documento: e.target.value })}
-            required
-            style={inputStyle}
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
-            style={inputStyle}
-          />
-          <button type="submit" style={buttonPrimary}>
-            Cadastrar Cliente
-          </button>
-        </form>
+        {/* Busca de clientes */}
+        <div style={{ marginBottom: "30px" }}>
+          <h2>Buscar Cliente</h2>
+          <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+            <input
+              type="text"
+              placeholder="Documento"
+              value={documentoBusca}
+              onChange={(e) => setDocumentoBusca(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              placeholder="Nome"
+              value={nomeBusca}
+              onChange={(e) => setNomeBusca(e.target.value)}
+              style={inputStyle}
+            />
+            <button style={buttonPrimary} onClick={carregarClientes}>Atualizar Lista</button>
+          </div>
 
-        <h2 style={{ textAlign: "center", marginBottom: "10px" }}>Lista de Clientes</h2>
+          {/* Lista de clientes */}
+          {loadingClientes && <p>🔄 Carregando clientes...</p>}
+          {!loadingClientes && (
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Documento</th>
+                  <th>Email</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtrarClientes().map(cliente => (
+                  <tr key={cliente.id}>
+                    {editandoId === cliente.id ? (
+                      <>
+                        <td><input value={editNome} onChange={(e) => setEditNome(e.target.value)} style={inputStyle} /></td>
+                        <td><input value={editDocumento} onChange={(e) => setEditDocumento(e.target.value)} style={inputStyle} /></td>
+                        <td><input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} style={inputStyle} /></td>
+                        <td>
+                          <button style={buttonSuccess} onClick={salvarEdicao}>Salvar</button>
+                          <button style={buttonCancel} onClick={cancelarEdicao}>Cancelar</button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td>{cliente.nome}</td>
+                        <td>{cliente.documento}</td>
+                        <td>{cliente.email || "-"}</td>
+                        <td>
+                          <button style={buttonPrimary} onClick={() => iniciarEdicao(cliente)}>Editar</button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {clientes.map((cliente) => (
-            <li key={cliente.id} style={{
-              background: "#f9f9f9",
-              color: "#000",
-              borderRadius: "8px",
-              padding: "10px",
-              marginBottom: "10px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-            }}>
-              <strong>{cliente.nome}</strong> <br />
-              Documento: {cliente.documento} <br />
-              Email: {cliente.email}
-            </li>
-          ))}
-        </ul>
+        {/* Cadastro de novo cliente */}
+        <div style={{ marginTop: "40px" }}>
+          <h2>Cadastrar Novo Cliente</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "400px" }}>
+            <input
+              type="text"
+              placeholder="Nome"
+              value={novoNome}
+              onChange={(e) => setNovoNome(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              placeholder="Documento"
+              value={novoDocumento}
+              onChange={(e) => setNovoDocumento(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="email"
+              placeholder="Email (opcional)"
+              value={novoEmail}
+              onChange={(e) => setNovoEmail(e.target.value)}
+              style={inputStyle}
+            />
+            <button style={buttonSuccess} onClick={cadastrarCliente}>Cadastrar Cliente</button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// Estilos padrões
-const inputStyle = {
-  padding: "12px",
-  borderRadius: "8px",
-  border: "1px solid #ccc",
-  fontSize: "16px",
-};
-
-const buttonPrimary = {
-  padding: "12px",
-  borderRadius: "8px",
-  background: "#000080",
-  color: "#fff",
-  fontWeight: "bold",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "16px",
-};
+// ----- ESTILOS -----
+const backgroundStyle = { minHeight: "100vh", background: "linear-gradient(135deg, #000080 0%, #1a1a99 50%, #3333cc 100%)", padding: "40px", color: "#fff" };
+const cardStyle = { background: "#fff", color: "#000080", borderRadius: "12px", maxWidth: "1100px", margin: "0 auto", padding: "30px", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" };
+const inputStyle = { padding: "10px", width: "100%", borderRadius: "8px", border: "1px solid #ccc", fontSize: "16px" };
+const tableStyle = { width: "100%", marginTop: "20px", background: "#f9f9f9", color: "#000", borderRadius: "8px", overflow: "hidden", borderCollapse: "collapse" };
+const buttonPrimary = { padding: "8px 12px", borderRadius: "8px", background: "#000080", color: "#fff", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "14px" };
+const buttonSuccess = { padding: "8px 12px", borderRadius: "8px", background: "#28a745", color: "#fff", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "14px" };
+const buttonCancel = { padding: "8px 12px", borderRadius: "8px", background: "#ccc", color: "#333", border: "none", fontWeight: "bold", fontSize: "14px" };
 
 export default Clientes;

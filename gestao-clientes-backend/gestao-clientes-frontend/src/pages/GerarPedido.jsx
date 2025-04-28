@@ -168,7 +168,95 @@ function GerarPedido() {
         <h1 style={{ textAlign: "center", marginBottom: "20px" }}>Gerar Novo Pedido</h1>
 
         {/* Campos de Documento e Nome */}
-        {/* ... resto dos campos exatamente como no seu código ... */}
+        <div style={{ marginBottom: "20px" }}>
+          <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+            <input
+              type="text"
+              placeholder="Documento"
+              value={documentoBusca}
+              onChange={(e) => setDocumentoBusca(e.target.value)}
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              placeholder="Nome do Cliente"
+              value={nomeBusca}
+              onChange={(e) => setNomeBusca(e.target.value)}
+              style={inputStyle}
+            />
+            <button style={buttonPrimary} onClick={buscarClientes}>Buscar Cliente</button>
+          </div>
+
+          {loadingClientes && <p>🔄 Carregando clientes...</p>}
+          {!loadingClientes && clientes.length === 0 && (documentoBusca || nomeBusca) && (
+            <p>Nenhum cliente encontrado.</p>
+          )}
+          {clientes.length > 0 && (
+            <ul style={listaStyle}>
+              {clientes.map((c) => (
+                <li key={c.id} style={itemListaStyle} onClick={() => selecionarCliente(c)}>
+                  {c.nome} ({c.documento})
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {clienteSelecionado && (
+          <div style={dadosClienteStyle}>
+            <h3>Cliente Selecionado:</h3>
+            <p><strong>Nome:</strong> {clienteSelecionado.nome}</p>
+            <p><strong>Documento:</strong> {clienteSelecionado.documento}</p>
+            <p><strong>Email:</strong> {clienteSelecionado.email}</p>
+          </div>
+        )}
+
+        {/* Busca de Produto */}
+        <div style={{ marginBottom: "30px" }}>
+          <label><strong>Buscar Produto (Nome ou Código):</strong></label>
+          <input
+            type="text"
+            value={buscaProduto}
+            onChange={(e) => {
+              setBuscaProduto(e.target.value);
+              buscarProdutos(e.target.value);
+            }}
+            placeholder="Digite o nome ou código"
+            style={inputStyle}
+          />
+          {loadingProdutos && <p>🔄 Carregando produtos...</p>}
+          {!loadingProdutos && produtos.length === 0 && buscaProduto.length > 2 && (
+            <p>Nenhum produto encontrado.</p>
+          )}
+        </div>
+
+        {/* Lista de Produtos */}
+        {produtos.length > 0 && (
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th>Produto</th>
+                <th>Preço (R$)</th>
+                <th>Estoque</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {produtos.map((p) => (
+                <tr key={p.id}>
+                  <td>{p.nome}</td>
+                  <td>{p.preco.toFixed(2)}</td>
+                  <td>{p.estoque}</td>
+                  <td>
+                    <button style={buttonPrimary} onClick={() => abrirModalQuantidade(p)}>
+                      Adicionar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
         {/* Itens do Pedido */}
         {pedido.length > 0 && (
@@ -208,127 +296,41 @@ function GerarPedido() {
         )}
 
         {/* Modal de Quantidade */}
-        {/* ... modal exatamente igual ao seu código atual ... */}
+        {showModal && (
+          <div style={modalOverlay}>
+            <div style={modalContent}>
+              <h2>Quantidade de {produtoSelecionado?.nome}</h2>
+              <input
+                type="number"
+                value={quantidadeModal}
+                onChange={(e) => setQuantidadeModal(e.target.value)}
+                placeholder="Digite a quantidade"
+                style={inputStyle}
+              />
+              <div style={{ marginTop: "20px", display: "flex", gap: "10px", justifyContent: "center" }}>
+                <button style={buttonPrimary} onClick={confirmarQuantidade}>Confirmar</button>
+                <button style={buttonCancel} onClick={() => setShowModal(false)}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-const backgroundStyle = {
-  minHeight: "100vh",
-  background: "linear-gradient(135deg, #000080 0%, #1a1a99 50%, #3333cc 100%)",
-  padding: "40px",
-  color: "#fff"
-};
-
-const cardStyle = {
-  background: "#fff",
-  color: "#000080",
-  borderRadius: "12px",
-  maxWidth: "1100px",
-  margin: "0 auto",
-  padding: "30px",
-  boxShadow: "0 8px 16px rgba(0,0,0,0.2)"
-};
-
-const inputStyle = {
-  padding: "10px",
-  width: "100%",
-  borderRadius: "8px",
-  border: "1px solid #ccc",
-  fontSize: "16px"
-};
-
-const listaStyle = {
-  background: "#fff",
-  color: "#000",
-  listStyle: "none",
-  padding: 0,
-  marginTop: "10px",
-  border: "1px solid #ccc",
-  borderRadius: "8px",
-  maxHeight: "200px",
-  overflowY: "auto",
-};
-
-const itemListaStyle = {
-  padding: "10px",
-  cursor: "pointer",
-  borderBottom: "1px solid #eee",
-  transition: "background 0.3s",
-};
-
-const tableStyle = {
-  width: "100%",
-  marginTop: "20px",
-  background: "#f9f9f9",
-  color: "#000",
-  borderRadius: "8px",
-  overflow: "hidden",
-  borderCollapse: "collapse",
-};
-
-const buttonPrimary = {
-  padding: "8px 12px",
-  borderRadius: "8px",
-  background: "#000080",
-  color: "#fff",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "14px",
-  transition: "background 0.3s",
-};
-
-const buttonSuccess = {
-  padding: "12px 20px",
-  borderRadius: "8px",
-  background: "#28a745",
-  color: "#fff",
-  border: "none",
-  fontWeight: "bold",
-  fontSize: "16px",
-  cursor: "pointer",
-  transition: "background 0.3s",
-};
-
-const buttonCancel = {
-  padding: "12px 20px",
-  borderRadius: "8px",
-  background: "#ccc",
-  color: "#333",
-  border: "none",
-  fontWeight: "bold",
-  fontSize: "16px",
-  cursor: "pointer",
-  transition: "background 0.3s",
-};
-
-const dadosClienteStyle = {
-  background: "#f1f1f1",
-  padding: "20px",
-  borderRadius: "8px",
-  marginBottom: "30px",
-  color: "#000",
-};
-
-const modalOverlay = {
-  position: "fixed",
-  top: 0, left: 0, right: 0, bottom: 0,
-  background: "rgba(0,0,0,0.7)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 1000
-};
-
-const modalContent = {
-  background: "#fff",
-  padding: "30px",
-  borderRadius: "12px",
-  color: "#000",
-  minWidth: "300px",
-  textAlign: "center"
-};
+// ----- ESTILOS -----
+const backgroundStyle = { minHeight: "100vh", background: "linear-gradient(135deg, #000080 0%, #1a1a99 50%, #3333cc 100%)", padding: "40px", color: "#fff" };
+const cardStyle = { background: "#fff", color: "#000080", borderRadius: "12px", maxWidth: "1100px", margin: "0 auto", padding: "30px", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" };
+const inputStyle = { padding: "10px", width: "100%", borderRadius: "8px", border: "1px solid #ccc", fontSize: "16px" };
+const listaStyle = { background: "#fff", color: "#000", listStyle: "none", padding: 0, marginTop: "10px", border: "1px solid #ccc", borderRadius: "8px", maxHeight: "200px", overflowY: "auto" };
+const itemListaStyle = { padding: "10px", cursor: "pointer", borderBottom: "1px solid #eee", transition: "background 0.3s" };
+const tableStyle = { width: "100%", marginTop: "20px", background: "#f9f9f9", color: "#000", borderRadius: "8px", overflow: "hidden", borderCollapse: "collapse" };
+const buttonPrimary = { padding: "8px 12px", borderRadius: "8px", background: "#000080", color: "#fff", border: "none", cursor: "pointer", fontWeight: "bold", fontSize: "14px" };
+const buttonSuccess = { padding: "12px 20px", borderRadius: "8px", background: "#28a745", color: "#fff", border: "none", fontWeight: "bold", fontSize: "16px" };
+const buttonCancel = { padding: "12px 20px", borderRadius: "8px", background: "#ccc", color: "#333", border: "none", fontWeight: "bold", fontSize: "16px" };
+const dadosClienteStyle = { background: "#f1f1f1", padding: "20px", borderRadius: "8px", marginBottom: "30px", color: "#000" };
+const modalOverlay = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 };
+const modalContent = { background: "#fff", padding: "30px", borderRadius: "12px", color: "#000", minWidth: "300px", textAlign: "center" };
 
 export default GerarPedido;

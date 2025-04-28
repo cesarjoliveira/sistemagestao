@@ -68,23 +68,31 @@ function Clientes() {
       toast.error("Preencha todos os campos obrigatórios!");
       return;
     }
-
+  
     try {
-      const resCliente = await apiRailway.post('/clientes', {
+      // 1. Cadastrar o cliente
+      await apiRailway.post('/clientes', {
         nome: novoNome,
         documento: novoDocumento,
         email: novoEmail
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
-
-      const clienteId = resCliente.data?.id;
-      if (!clienteId) {
-        throw new Error("Erro ao recuperar ID do cliente após cadastro.");
+  
+      // 2. Buscar o cliente recém-cadastrado para pegar o id
+      const resBusca = await apiRailway.get('/clientes', {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+  
+      const clienteCadastrado = resBusca.data.find(c => c.documento === novoDocumento);
+  
+      if (!clienteCadastrado) {
+        throw new Error("Não foi possível localizar o cliente recém-cadastrado.");
       }
-
+  
+      // 3. Cadastrar o endereço
       await apiRailway.post('/enderecos', {
-        cliente_id: clienteId,
+        cliente_id: clienteCadastrado.id,
         rua: novoRua,
         numero: novoNumero,
         bairro: novoBairro,
@@ -95,7 +103,7 @@ function Clientes() {
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
-
+  
       toast.success("Cliente e endereço cadastrados com sucesso!");
       resetarFormulario();
       carregarClientes();

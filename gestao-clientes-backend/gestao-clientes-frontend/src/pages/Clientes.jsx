@@ -78,7 +78,11 @@ function Clientes() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
 
-      const clienteId = resCliente.data[0].id;
+      const clienteId = resCliente.data?.id;
+
+if (!clienteId) {
+  throw new Error("Erro ao recuperar ID do cliente após cadastro.");
+}
 
       await apiRailway.post('/enderecos', {
         cliente_id: clienteId,

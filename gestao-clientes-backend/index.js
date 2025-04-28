@@ -74,7 +74,8 @@ app.post('/clientes', autenticarToken, async (req, res) => {
   const { nome, documento, email } = req.body;
   const { data, error } = await supabase
     .from('clientes')
-    .insert([{ nome, documento, email }]);
+    .insert([{ nome, documento, email }])
+    .select('*');
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
 });

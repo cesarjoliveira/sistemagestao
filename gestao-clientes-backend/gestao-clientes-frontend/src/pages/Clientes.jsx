@@ -11,7 +11,6 @@ function Clientes() {
   const [novoNome, setNovoNome] = useState("");
   const [novoDocumento, setNovoDocumento] = useState("");
   const [novoEmail, setNovoEmail] = useState("");
-
   const [novoRua, setNovoRua] = useState("");
   const [novoNumero, setNovoNumero] = useState("");
   const [novoBairro, setNovoBairro] = useState("");
@@ -21,9 +20,8 @@ function Clientes() {
   const [novoComplemento, setNovoComplemento] = useState("");
 
   const [clienteAberto, setClienteAberto] = useState(null);
-  const [enderecoAberto, setEnderecoAberto] = useState(null);
-
-  const [editando, setEditando] = useState(false);
+  const [enderecoAtual, setEnderecoAtual] = useState(null);
+  const [enderecoNovo, setEnderecoNovo] = useState(null);
 
   useEffect(() => {
     carregarClientes();
@@ -52,14 +50,26 @@ function Clientes() {
     });
   };
 
+  const resetarFormulario = () => {
+    setNovoNome("");
+    setNovoDocumento("");
+    setNovoEmail("");
+    setNovoRua("");
+    setNovoNumero("");
+    setNovoBairro("");
+    setNovoCidade("");
+    setNovoEstado("");
+    setNovoCep("");
+    setNovoComplemento("");
+  };
+
   const cadastrarCliente = async () => {
-    if (!novoNome || !novoDocumento || !novoRua || !novoNumero || !novoBairro || !novoCidade || !novoEstado || !novoCep) {
+    if (!novoNome || !novoDocumento || !novoEmail || !novoRua || !novoNumero || !novoBairro || !novoCidade || !novoEstado || !novoCep) {
       toast.error("Preencha todos os campos obrigatórios!");
       return;
     }
 
     try {
-      // 1. Cadastrar Cliente
       const resCliente = await apiRailway.post('/clientes', {
         nome: novoNome,
         documento: novoDocumento,
@@ -70,7 +80,6 @@ function Clientes() {
 
       const clienteId = resCliente.data[0].id;
 
-      // 2. Cadastrar Endereço
       await apiRailway.post('/enderecos', {
         cliente_id: clienteId,
         rua: novoRua,
@@ -93,42 +102,61 @@ function Clientes() {
     }
   };
 
-  const resetarFormulario = () => {
-    setNovoNome("");
-    setNovoDocumento("");
-    setNovoEmail("");
-    setNovoRua("");
-    setNovoNumero("");
-    setNovoBairro("");
-    setNovoCidade("");
-    setNovoEstado("");
-    setNovoCep("");
-    setNovoComplemento("");
-  };
-
   const abrirCliente = async (cliente) => {
     try {
       const res = await apiRailway.get(`/enderecos/${cliente.id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
 
+      const enderecosOrdenados = res.data.sort((a, b) => new Date(b.atualizado_em) - new Date(a.atualizado_em));
+      const enderecoMaisRecente = enderecosOrdenados[0];
+
       setClienteAberto({ ...cliente });
-      setEnderecoAberto(res.data[0] || {});
-      setEditando(false);
+      setEnderecoAtual(enderecoMaisRecente || null);
+      setEnderecoNovo(enderecoMaisRecente ? { ...enderecoMaisRecente } : {
+        rua: "",
+        numero: "",
+        bairro: "",
+        cidade: "",
+        estado: "",
+        cep: "",
+        complemento: "",
+        cliente_id: cliente.id
+      });
+
     } catch (error) {
-      console.error("Erro ao carregar endereço:", error);
-      toast.error("Erro ao carregar endereço!");
+      console.error("Erro ao abrir cliente:", error);
+      toast.error("Erro ao carregar endereço do cliente!");
     }
   };
 
   const fecharCliente = () => {
     setClienteAberto(null);
-    setEnderecoAberto(null);
-    setEditando(false);
+    setEnderecoAtual(null);
+    setEnderecoNovo(null);
   };
 
   const salvarEdicao = async () => {
+    if (!clienteAberto.nome || !clienteAberto.documento || !clienteAberto.email) {
+      toast.error("Preencha todos os campos do cliente!");
+      return;
+    }
+    if (!enderecoNovo.rua || !enderecoNovo.numero || !enderecoNovo.bairro || !enderecoNovo.cidade || !enderecoNovo.estado || !enderecoNovo.cep) {
+      toast.error("Preencha todos os campos obrigatórios do endereço!");
+      return;
+    }
+
+    const enderecoAntigoTexto = `${enderecoAtual?.rua}, ${enderecoAtual?.numero} - ${enderecoAtual?.bairro} - ${enderecoAtual?.cidade}/${enderecoAtual?.estado} - CEP ${enderecoAtual?.cep}`;
+    const enderecoNovoTexto = `${enderecoNovo.rua}, ${enderecoNovo.numero} - ${enderecoNovo.bairro} - ${enderecoNovo.cidade}/${enderecoNovo.estado} - CEP ${enderecoNovo.cep}`;
+
+    const confirmar = window.confirm(
+      `⚠️ Você está alterando o endereço:\n\nDE: ${enderecoAntigoTexto}\n\nPARA: ${enderecoNovoTexto}\n\nDeseja confirmar a alteração?`
+    );
+
+    if (!confirmar) return;
+
     try {
+      // Atualiza cliente
       await apiRailway.put(`/clientes/${clienteAberto.id}`, {
         nome: clienteAberto.nome,
         documento: clienteAberto.documento,
@@ -137,24 +165,26 @@ function Clientes() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
 
-      await apiRailway.put(`/enderecos/${enderecoAberto.id}`, {
-        rua: enderecoAberto.rua,
-        numero: enderecoAberto.numero,
-        bairro: enderecoAberto.bairro,
-        cidade: enderecoAberto.cidade,
-        estado: enderecoAberto.estado,
-        cep: enderecoAberto.cep,
-        complemento: enderecoAberto.complemento
+      // Cria novo endereço
+      await apiRailway.post('/enderecos', {
+        cliente_id: enderecoNovo.cliente_id,
+        rua: enderecoNovo.rua,
+        numero: enderecoNovo.numero,
+        bairro: enderecoNovo.bairro,
+        cidade: enderecoNovo.cidade,
+        estado: enderecoNovo.estado,
+        cep: enderecoNovo.cep,
+        complemento: enderecoNovo.complemento
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
 
-      toast.success("Cliente e endereço atualizados com sucesso!");
-      setEditando(false);
+      toast.success("Alterações salvas com sucesso!");
+      fecharCliente();
       carregarClientes();
     } catch (error) {
-      console.error("Erro ao salvar edição:", error);
-      toast.error("Erro ao salvar edição!");
+      console.error("Erro ao salvar alterações:", error);
+      toast.error("Erro ao salvar alterações!");
     }
   };
 
@@ -190,11 +220,7 @@ function Clientes() {
                     <td>{cliente.nome}</td>
                     <td>{cliente.documento}</td>
                     <td>
-                      {clienteAberto?.id === cliente.id ? (
-                        <button style={buttonCancel} onClick={fecharCliente}>Fechar</button>
-                      ) : (
-                        <button style={buttonPrimary} onClick={() => abrirCliente(cliente)}>Abrir</button>
-                      )}
+                      <button style={buttonPrimary} onClick={() => abrirCliente(cliente)}>Abrir</button>
                     </td>
                   </tr>
                 ))}
@@ -203,25 +229,45 @@ function Clientes() {
           )}
         </div>
 
-        {/* Dados do Cliente Aberto */}
-        {clienteAberto && enderecoAberto && (
+        {/* Cliente Aberto para Edição */}
+        {clienteAberto && enderecoNovo && (
           <div style={dadosClienteStyle}>
-            <h2>Dados do Cliente</h2>
-            <input value={clienteAberto.nome} onChange={(e) => setClienteAberto({ ...clienteAberto, nome: e.target.value })} style={inputStyle} />
-            <input value={clienteAberto.documento} onChange={(e) => setClienteAberto({ ...clienteAberto, documento: e.target.value })} style={inputStyle} />
-            <input value={clienteAberto.email || ""} onChange={(e) => setClienteAberto({ ...clienteAberto, email: e.target.value })} style={inputStyle} />
+            <h2>Editar Cliente e Endereço</h2>
 
-            <h3>Endereço:</h3>
-            <input value={enderecoAberto.rua} onChange={(e) => setEnderecoAberto({ ...enderecoAberto, rua: e.target.value })} style={inputStyle} />
-            <input value={enderecoAberto.numero} onChange={(e) => setEnderecoAberto({ ...enderecoAberto, numero: e.target.value })} style={inputStyle} />
-            <input value={enderecoAberto.bairro} onChange={(e) => setEnderecoAberto({ ...enderecoAberto, bairro: e.target.value })} style={inputStyle} />
-            <input value={enderecoAberto.cidade} onChange={(e) => setEnderecoAberto({ ...enderecoAberto, cidade: e.target.value })} style={inputStyle} />
-            <input value={enderecoAberto.estado} onChange={(e) => setEnderecoAberto({ ...enderecoAberto, estado: e.target.value })} style={inputStyle} />
-            <input value={enderecoAberto.cep} onChange={(e) => setEnderecoAberto({ ...enderecoAberto, cep: e.target.value })} style={inputStyle} />
-            <input value={enderecoAberto.complemento || ""} onChange={(e) => setEnderecoAberto({ ...enderecoAberto, complemento: e.target.value })} style={inputStyle} />
+            <label>Nome:</label>
+            <input type="text" value={clienteAberto.nome} onChange={(e) => setClienteAberto({ ...clienteAberto, nome: e.target.value })} style={inputStyle} />
+
+            <label>Documento:</label>
+            <input type="text" value={clienteAberto.documento} onChange={(e) => setClienteAberto({ ...clienteAberto, documento: e.target.value })} style={inputStyle} />
+
+            <label>Email:</label>
+            <input type="email" value={clienteAberto.email} onChange={(e) => setClienteAberto({ ...clienteAberto, email: e.target.value })} style={inputStyle} />
+
+            <h3>Endereço</h3>
+
+            <label>Rua:</label>
+            <input type="text" value={enderecoNovo.rua} onChange={(e) => setEnderecoNovo({ ...enderecoNovo, rua: e.target.value })} style={inputStyle} />
+
+            <label>Número:</label>
+            <input type="text" value={enderecoNovo.numero} onChange={(e) => setEnderecoNovo({ ...enderecoNovo, numero: e.target.value })} style={inputStyle} />
+
+            <label>Bairro:</label>
+            <input type="text" value={enderecoNovo.bairro} onChange={(e) => setEnderecoNovo({ ...enderecoNovo, bairro: e.target.value })} style={inputStyle} />
+
+            <label>Cidade:</label>
+            <input type="text" value={enderecoNovo.cidade} onChange={(e) => setEnderecoNovo({ ...enderecoNovo, cidade: e.target.value })} style={inputStyle} />
+
+            <label>Estado:</label>
+            <input type="text" value={enderecoNovo.estado} onChange={(e) => setEnderecoNovo({ ...enderecoNovo, estado: e.target.value })} style={inputStyle} />
+
+            <label>CEP:</label>
+            <input type="text" value={enderecoNovo.cep} onChange={(e) => setEnderecoNovo({ ...enderecoNovo, cep: e.target.value })} style={inputStyle} />
+
+            <label>Complemento (opcional):</label>
+            <input type="text" value={enderecoNovo.complemento || ""} onChange={(e) => setEnderecoNovo({ ...enderecoNovo, complemento: e.target.value })} style={inputStyle} />
 
             <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
-              <button style={buttonSuccess} onClick={salvarEdicao}>Salvar</button>
+              <button style={buttonSuccess} onClick={salvarEdicao}>Salvar Alterações</button>
               <button style={buttonCancel} onClick={fecharCliente}>Cancelar</button>
             </div>
           </div>
@@ -230,8 +276,43 @@ function Clientes() {
         {/* Cadastro Novo Cliente */}
         <div style={{ marginTop: "40px" }}>
           <h2>Cadastrar Novo Cliente</h2>
-          {/* Formulário aqui igual ao que já montamos antes */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "600px" }}>
+            <label>Nome:</label>
+            <input type="text" value={novoNome} onChange={(e) => setNovoNome(e.target.value)} style={inputStyle} />
+
+            <label>Documento:</label>
+            <input type="text" value={novoDocumento} onChange={(e) => setNovoDocumento(e.target.value)} style={inputStyle} />
+
+            <label>Email:</label>
+            <input type="email" value={novoEmail} onChange={(e) => setNovoEmail(e.target.value)} style={inputStyle} />
+
+            <h3>Endereço</h3>
+
+            <label>Rua:</label>
+            <input type="text" value={novoRua} onChange={(e) => setNovoRua(e.target.value)} style={inputStyle} />
+
+            <label>Número:</label>
+            <input type="text" value={novoNumero} onChange={(e) => setNovoNumero(e.target.value)} style={inputStyle} />
+
+            <label>Bairro:</label>
+            <input type="text" value={novoBairro} onChange={(e) => setNovoBairro(e.target.value)} style={inputStyle} />
+
+            <label>Cidade:</label>
+            <input type="text" value={novoCidade} onChange={(e) => setNovoCidade(e.target.value)} style={inputStyle} />
+
+            <label>Estado:</label>
+            <input type="text" value={novoEstado} onChange={(e) => setNovoEstado(e.target.value)} style={inputStyle} />
+
+            <label>CEP:</label>
+            <input type="text" value={novoCep} onChange={(e) => setNovoCep(e.target.value)} style={inputStyle} />
+
+            <label>Complemento (opcional):</label>
+            <input type="text" value={novoComplemento} onChange={(e) => setNovoComplemento(e.target.value)} style={inputStyle} />
+
+            <button style={buttonSuccess} onClick={cadastrarCliente}>Cadastrar Cliente</button>
+          </div>
         </div>
+
       </div>
     </div>
   );

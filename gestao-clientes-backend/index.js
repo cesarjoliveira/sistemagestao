@@ -64,20 +64,54 @@ app.post('/login', async (req, res) => {
 // -------------------- Rotas Protegidas --------------------
 
 // CLIENTES
-app.get('/clientes', autenticarToken, async (req, res) => {
-  const { data, error } = await supabase.from('clientes').select('*');
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
-});
-
 app.post('/clientes', autenticarToken, async (req, res) => {
   const { nome, documento, email } = req.body;
+
+  if (!nome || !documento || !email) {
+    return res.status(400).json({ error: 'Nome, documento e email são obrigatórios.' });
+  }
+
+  // Verificar se já existe cliente com mesmo documento
+  const { data: clienteDoc, error: errorDoc } = await supabase
+    .from('clientes')
+    .select('*')
+    .eq('documento', documento)
+    .maybeSingle();
+
+  if (errorDoc) {
+    return res.status(500).json({ error: 'Erro ao buscar documento existente.' });
+  }
+
+  if (clienteDoc) {
+    return res.status(409).json({ error: 'Documento já cadastrado.' });
+  }
+
+  // Verificar se já existe cliente com mesmo email
+  const { data: clienteEmail, error: errorEmail } = await supabase
+    .from('clientes')
+    .select('*')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (errorEmail) {
+    return res.status(500).json({ error: 'Erro ao buscar email existente.' });
+  }
+
+  if (clienteEmail) {
+    return res.status(409).json({ error: 'Email já cadastrado.' });
+  }
+
+  // Inserir novo cliente
   const { data, error } = await supabase
     .from('clientes')
     .insert([{ nome, documento, email }])
     .select('*');
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json(data);
+
+  if (error) {
+    return res.status(500).json({ error: 'Erro ao cadastrar cliente.' });
+  }
+
+  res.status(201).json(data[0]);
 });
 
 // 🔥 Atualizar cliente (parcial)

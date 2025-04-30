@@ -6,6 +6,7 @@ import GerarPedido from "./pages/GerarPedido";
 import Entregas from "./pages/Entregas";
 import Login from "./pages/Login";
 import CadastroUsuario from "./pages/CadastroUsuario";
+import RelatorioVendas from './pages/RelatorioVendas';
 
 import Negado from "./pages/Negado";
 import { PrivateRoute } from "./components/PrivateRoute";
@@ -37,6 +38,7 @@ function App() {
     {["vendedor", "emissor", "admin"].includes(usuario.role) && <Link to="/pedidos">Pedidos</Link>}
     {["vendedor", "admin"].includes(usuario.role) && <Link to="/GerarPedido">Gerar Pedido</Link>}
     {usuario && usuario.role === "admin" && <Link to="/usuarios">Cadastrar Usuário</Link>}
+    {usuario && usuario.role === "admin" && <Link to="/relatorios">Relatórios</Link>}
     {["logistica", "admin"].includes(usuario.role) && <Link to="/entregas">Entregas</Link>}
     <button onClick={() => {
       localStorage.removeItem("token");
@@ -51,6 +53,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login setUsuario={setUsuario} />} />
         <Route path="/negado" element={<Negado />} />
+        <Route path="/relatorios" element={<RelatorioVendas />} />
         <Route path="/" element={
           <PrivateRoute usuario={usuario} roles={["vendedor", "admin"]}>
             <Clientes />

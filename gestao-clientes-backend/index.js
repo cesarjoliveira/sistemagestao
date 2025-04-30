@@ -264,7 +264,9 @@ app.get('/relatorios/vendas', async (req, res) => {
     // Consulta os pedidos e o usuário que os criou
     const { data: pedidos, error } = await supabase
       .from('pedidos')
-      .select('usuario_id, total');
+      .select('usuario_id');
+     //  total' 
+      
 
     if (error) throw error;
 

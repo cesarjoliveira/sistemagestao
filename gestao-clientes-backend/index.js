@@ -259,6 +259,33 @@ app.get('/produtos', autenticarToken, async (req, res) => {
   res.json(data);
 });
 
+app.get('/relatorios/vendas', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('pedidos')
+      .select('usuario_id, total')
+      .eq('status', 'concluido'); // ou outro critério de pedido finalizado
+
+    if (error) throw error;
+
+    const relatorio = {};
+
+    data.forEach(pedido => {
+      const id = pedido.usuario_id;
+      if (!relatorio[id]) {
+        relatorio[id] = { totalVendas: 0, pedidos: 0 };
+      }
+      relatorio[id].totalVendas += pedido.total;
+      relatorio[id].pedidos += 1;
+    });
+
+    res.json(relatorio);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao gerar relatório', detalhes: err.message });
+  }
+});
+
+
 // -------------------- Subir Servidor --------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

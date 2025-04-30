@@ -26,7 +26,7 @@ export default function RelatorioVendas() {
             <tr key={usuarioId}>
               <td>{usuarioId}</td>
               <td>{dados.pedidos}</td>
-              <td>R$ {dados.totalVendas.toFixed(2)}</td>
+              {/* <td>R$ {dados.totalVendas.toFixed(2)}</td> */}
             </tr>
           ))}
         </tbody>

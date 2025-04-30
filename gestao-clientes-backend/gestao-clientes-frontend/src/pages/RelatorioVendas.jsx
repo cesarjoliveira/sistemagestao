@@ -5,10 +5,9 @@ export default function RelatorioVendas() {
   const [relatorio, setRelatorio] = useState({});
 
   useEffect(() => {
-    setRelatorio({
-      "user123": { pedidos: 5, totalVendas: 1234.56 },
-      "user456": { pedidos: 2, totalVendas: 789.00 }
-    });
+    axios.get('/relatorios/vendas')
+      .then(res => setRelatorio(res.data))
+      .catch(err => console.error("Erro ao buscar relatório:", err));
   }, []);
 
   return (

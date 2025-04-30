@@ -279,7 +279,7 @@ app.get('/relatorios/vendas', async (req, res) => {
       }
 
       relatorio[usuarioId].pedidos += 1;
-      relatorio[usuarioId].totalVendas += pedido.total || 0;
+   //   relatorio[usuarioId].totalVendas += pedido.total || 0;
     });
 
     res.json(relatorio);
